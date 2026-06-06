@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Flask
+instance/
+*.db
+*.sqlite3
+secret_key.txt
+
+# ML Models (too large for GitHub)
+models/
+ravdess_data/
+
+# HuggingFace cache
+.cache/
+
+# Environment variables
+.env
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+ffmpeg-8.1.1-essentials_build/
+ffmpeg-8.1.1-essentials_build.zip
+
+ffmpeg-8.1.1-essentials_build/
+ffmpeg-8.1.1-essentials_build.zip
+audio.mp3

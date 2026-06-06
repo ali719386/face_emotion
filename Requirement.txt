@@ -1,0 +1,13 @@
+flask>=3.1.0
+flask-cors>=4.0.0
+opencv-python>=4.10.0
+deepface>=0.0.90
+tensorflow==2.10.0
+numpy<2
+transformers>=5.0.0
+torch
+librosa>=0.10.0
+soundfile>=0.12.0
+scikit-learn>=1.1.0
+werkzeug>=3.1.0
+requests>=2.27.0

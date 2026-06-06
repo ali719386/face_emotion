@@ -1,0 +1,57 @@
+# EmotionSense — AI Emotion Detection System
+
+A multimodal emotion detection web app that analyzes emotions from **face images**, **voice recordings**, and **text** using deep learning models.
+
+## Features
+- Face emotion detection via DeepFace
+- Voice emotion detection via CNN trained on RAVDESS dataset
+- Text emotion detection via `j-hartmann/emotion-english-distilroberta-base`
+- Fusion engine combining all three modalities
+- Support suggestions based on detected emotion
+- Light/Dark theme toggle
+
+## Tech Stack
+- **Backend:** Python, Flask
+- **Face:** DeepFace, OpenCV
+- **Voice:** TensorFlow/Keras CNN, Librosa
+- **Text:** HuggingFace Transformers (RoBERTa)
+- **Frontend:** HTML, CSS, Vanilla JS
+
+## Setup
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/YOUR_USERNAME/face_emotion.git
+cd face_emotion
+```
+
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Train the voice model (first time only)
+```bash
+python train_voice_model.py
+```
+This downloads the RAVDESS dataset (~400MB) and trains the voice emotion model. Saves to `models/voice_model.h5`.
+
+### 4. Run the app
+```bash
+python app.py
+```
+Open `http://127.0.0.1:8003` in your browser.
+
+## Notes
+- `models/` folder is not included in the repo (too large). Run `train_voice_model.py` to generate it.
+- Requires `ffmpeg` installed on your system for MP3 audio support.
+- Python 3.10 recommended (TensorFlow 2.10 compatibility).
+
+## Team
+- Muhammad Ali
+- Muhammad Haseeb
+- Abdul Rehman
+- Muhammad Maqsood
+
+**Supervisor:** Sir Ghulam Mustafa  
+**University:** Riphah International University, Faisalabad Campus

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_name }} | Landing{% endblock %}
+
+{% block body_class %}page-shell landing-shell{% endblock %}
+
+{% block content %}
+<main class="landing-layout">
+    <section class="hero-panel">
+        <div class="eyebrow">Multimodal Emotion Intelligence</div>
+        <h1>Professional emotion analytics for text, voice, and live camera input.</h1>
+        <p class="hero-copy">
+            {{ app_name }} turns your FYP into a modern web platform with authentication,
+            a guided dashboard, fused emotion prediction, and emotion-specific support actions.
+        </p>
+
+        <div class="hero-actions">
+            <a class="btn btn-primary" href="{{ url_for('register') }}">Create account</a>
+            <a class="btn btn-secondary" href="{{ url_for('login') }}">Sign in</a>
+        </div>
+
+        <div class="stat-row">
+            <article class="stat-card">
+                <span class="stat-number">3</span>
+                <span class="stat-label">Input channels</span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-number">1</span>
+                <span class="stat-label">Fusion dashboard</span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-number">24/7</span>
+                <span class="stat-label">Support prompts</span>
+            </article>
+        </div>
+    </section>
+
+    <section class="glass-panel feature-panel">
+        <div class="section-heading">
+            <span class="eyebrow">How it works</span>
+            <h2>Start with guided input capture</h2>
+        </div>
+
+        <div class="feature-grid">
+            {% for item in how_it_works %}
+                <article class="feature-card">
+                    <span class="feature-step">{{ item.step }}</span>
+                    <h3>{{ item.title }}</h3>
+                    <p>{{ item.description }}</p>
+                </article>
+            {% endfor %}
+        </div>
+
+        <div class="feature-footer">
+            <div>
+                <h3>Dashboard flow</h3>
+                <p>Register first, open the dashboard, capture camera and voice, enter text, then review support options for the detected emotion.</p>
+            </div>
+            <a class="text-link" href="{{ url_for('register') }}">Open the experience</a>
+        </div>
+    </section>
+</main>
+{% endblock %}

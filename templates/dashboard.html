@@ -1,0 +1,74 @@
+{% extends "workspace.html" %}
+
+{% block workspace_content %}
+<section class="hero-banner">
+    <div>
+        <div class="eyebrow">Guided workspace</div>
+        <h2>Use separate pages for image, voice, text, or combined analysis.</h2>
+        <p>
+            Open the page you need from the drawer, submit one clear input, and review the latest result in the results page.
+        </p>
+    </div>
+    <div class="hero-chip-group">
+        <span class="hero-chip">Light Theme</span>
+        <span class="hero-chip">Dark Theme</span>
+        <span class="hero-chip">Image Page</span>
+        <span class="hero-chip">Voice Page</span>
+        <span class="hero-chip">Text Page</span>
+    </div>
+</section>
+
+<section class="card-grid quick-link-grid">
+    <a class="glass-panel quick-link-card" href="{{ url_for('dashboard_mode', mode='image') }}">
+        <span class="feature-step">01</span>
+        <h3>Image page</h3>
+        <p>Upload a face photo or capture one with the camera.</p>
+    </a>
+    <a class="glass-panel quick-link-card" href="{{ url_for('dashboard_mode', mode='voice') }}">
+        <span class="feature-step">02</span>
+        <h3>Voice page</h3>
+        <p>Upload audio or record directly in the browser.</p>
+    </a>
+    <a class="glass-panel quick-link-card" href="{{ url_for('dashboard_mode', mode='text') }}">
+        <span class="feature-step">03</span>
+        <h3>Text page</h3>
+        <p>Type your message and run text emotion analysis.</p>
+    </a>
+    <a class="glass-panel quick-link-card" href="{{ url_for('dashboard_mode', mode='all') }}">
+        <span class="feature-step">04</span>
+        <h3>All inputs page</h3>
+        <p>Combine image, voice, and text for a fuller result.</p>
+    </a>
+    <a class="glass-panel quick-link-card" href="{{ url_for('dashboard_results') }}">
+        <span class="feature-step">05</span>
+        <h3>Results page</h3>
+        <p>Review the latest emotion result, support cards, and history.</p>
+    </a>
+</section>
+
+<section class="card-grid">
+    {% for item in how_it_works %}
+        <article class="glass-panel step-card">
+            <span class="feature-step">{{ item.step }}</span>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.description }}</p>
+        </article>
+    {% endfor %}
+</section>
+
+{% if last_analysis %}
+    <section class="glass-panel overview-summary-panel">
+        <div class="section-heading">
+            <span class="eyebrow">Latest result</span>
+            <h2>{{ last_analysis.fused.label|title }} at {{ last_analysis.fused.dominant_percent }}%</h2>
+        </div>
+        <p class="helper-text">
+            Last run used {{ last_analysis.input_mode_label }}. Open the results page for full emotion scores and support recommendations.
+        </p>
+        <div class="action-row">
+            <a class="btn btn-primary" href="{{ url_for('dashboard_results') }}">Open results</a>
+            <a class="btn btn-secondary" href="{{ url_for('dashboard_mode', mode='all') }}">Run new analysis</a>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "workspace.html" %}
+
+{% block workspace_content %}
+<section class="results-layout">
+    <div class="section-heading">
+        <span class="eyebrow">Results</span>
+        <h2>Latest emotion output</h2>
+    </div>
+
+    {% if last_analysis %}
+        <div class="result-grid">
+            <article class="glass-panel result-hero">
+                <p class="result-label">Dominant emotion</p>
+                <h3>{{ last_analysis.fused.label|title }}</h3>
+                <strong>{{ last_analysis.fused.dominant_percent }}%</strong>
+                <p>Analysis mode: {{ last_analysis.input_mode_label }}</p>
+            </article>
+
+            <article class="glass-panel modality-summary">
+                <h3>Confidence summary</h3>
+                <div class="modality-list">
+                    <div><span>Selected mode</span><strong>{{ last_analysis.input_mode_label }}</strong></div>
+                    <div><span>Submitted inputs</span><strong>{{ last_analysis.used_inputs|join(', ') if last_analysis.used_inputs else 'None' }}</strong></div>
+                    <div><span>Overall confidence</span><strong>{{ last_analysis.fused.confidence.level }}</strong></div>
+                    <div><span>Top-score margin</span><strong>{{ last_analysis.fused.confidence.margin_percent }}%</strong></div>
+                </div>
+            </article>
+        </div>
+
+        <article class="glass-panel score-panel">
+            <h3>Emotion distribution</h3>
+            <div class="score-list">
+                {% for item in last_analysis.fused.scores %}
+                    <div class="score-row">
+                        <div class="score-copy">
+                            <span>{{ item.emotion }}</span>
+                            <strong>{{ item.probability }}%</strong>
+                        </div>
+                        <div class="score-bar">
+                            <div class="score-bar-fill" style="width: {{ item.probability }}%;"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="glass-panel score-panel">
+            <h3>Per-modality quality</h3>
+            <div class="score-list">
+                <div class="score-row">
+                    <div class="score-copy">
+                        <span>Face</span>
+                        <strong>{{ last_analysis.modality_details.face.label }} · {{ last_analysis.modality_details.face.confidence_level }} ({{ last_analysis.modality_details.face.confidence_percent }}%)</strong>
+                    </div>
+                </div>
+                <div class="score-row">
+                    <div class="score-copy">
+                        <span>Voice</span>
+                        <strong>{{ last_analysis.modality_details.voice.label }} · {{ last_analysis.modality_details.voice.confidence_level }} ({{ last_analysis.modality_details.voice.confidence_percent }}%)</strong>
+                    </div>
+                </div>
+                <div class="score-row">
+                    <div class="score-copy">
+                        <span>Text</span>
+                        <strong>{{ last_analysis.modality_details.text.label }} · {{ last_analysis.modality_details.text.confidence_level }} ({{ last_analysis.modality_details.text.confidence_percent }}%)</strong>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        {% if last_analysis.issues %}
+            <article class="glass-panel issue-panel">
+                <h3>Fallback notices</h3>
+                <ul class="issue-list">
+                    {% for issue in last_analysis.issues %}
+                        <li>{{ issue }}</li>
+                    {% endfor %}
+                </ul>
+            </article>
+        {% endif %}
+    {% else %}
+        <article class="glass-panel empty-panel">
+            <h3>No analysis yet</h3>
+            <p>Open Image, Voice, Text, or All Inputs from the drawer and run your first analysis.</p>
+        </article>
+    {% endif %}
+</section>
+
+<section class="support-layout">
+    <div class="section-heading">
+        <span class="eyebrow">Support recommendations</span>
+        <h2>Emotion-specific options</h2>
+    </div>
+
+    {% if last_analysis %}
+        <article class="glass-panel support-intro">
+            <h3>{{ last_analysis.support.headline }}</h3>
+            <p>{{ last_analysis.support.summary }}</p>
+        </article>
+
+        <div class="support-grid">
+            {% for card in last_analysis.support.cards %}
+                <article class="glass-panel support-card">
+                    <span class="support-label">{{ card.label }}</span>
+                    <h3>{{ card.title }}</h3>
+                    <p>{{ card.description }}</p>
+
+                    {% if card.url %}
+                        <a class="btn btn-secondary btn-block" href="{{ card.url }}" target="_blank" rel="noreferrer">{{ card.cta }}</a>
+                    {% endif %}
+
+                    {% if card.prompt %}
+                        <div class="prompt-box">{{ card.prompt }}</div>
+                        {% if card.agent_url %}
+                            <a class="btn btn-secondary btn-block" href="{{ card.agent_url }}" target="_blank" rel="noreferrer">{{ card.agent_cta }}</a>
+                        {% endif %}
+                        <button class="btn btn-primary btn-block" type="button" data-copy-target="{{ card.prompt }}">Copy AI prompt</button>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <article class="glass-panel empty-panel">
+            <h3>Support cards will appear after analysis</h3>
+            <p>Run any analysis page first, then come back here to review support suggestions.</p>
+        </article>
+    {% endif %}
+</section>
+
+<section class="history-layout">
+    <div class="section-heading">
+        <span class="eyebrow">Recent activity</span>
+        <h2>Analysis history</h2>
+    </div>
+
+    <div class="history-grid">
+        {% if recent_analyses %}
+            {% for item in recent_analyses %}
+                <article class="glass-panel history-card">
+                    <div class="history-head">
+                        <h3>{{ item.dominant_emotion|title }}</h3>
+                        <strong>{{ item.dominant_percent }}%</strong>
+                    </div>
+                    <p>{{ item.created_at }}</p>
+                    <div class="history-meta">
+                        <span>Face: {{ item.face_label|title }}</span>
+                        <span>Voice: {{ item.voice_label|title }}</span>
+                        <span>Text: {{ item.text_label|title }}</span>
+                    </div>
+                </article>
+            {% endfor %}
+        {% else %}
+            <article class="glass-panel empty-panel">
+                <h3>No history available</h3>
+                <p>Your completed analyses will be stored here after you run the model.</p>
+            </article>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

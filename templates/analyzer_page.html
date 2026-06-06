@@ -1,0 +1,130 @@
+{% extends "workspace.html" %}
+
+{% block workspace_content %}
+<section class="hero-banner">
+    <div>
+        <div class="eyebrow">{{ mode_content.eyebrow }}</div>
+        <h2>{{ mode_content.title }}</h2>
+        <p>{{ mode_content.description }}</p>
+    </div>
+    <div class="hero-chip-group">
+        <span class="hero-chip">{{ mode_label }}</span>
+        <span class="hero-chip">Easy to use</span>
+    </div>
+</section>
+
+<section class="glass-panel analyzer-panel">
+    <div class="section-heading">
+        <span class="eyebrow">Analysis form</span>
+        <h2>{{ mode_label }} page</h2>
+    </div>
+
+    <form method="post" action="{{ url_for('analyze') }}" enctype="multipart/form-data" class="analyzer-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="input_mode" value="{{ analyzer_mode }}">
+        <input type="hidden" name="camera_snapshot" id="cameraSnapshot">
+
+        {% if analyzer_mode in ("image", "all") %}
+            <div class="panel-grid single-column">
+                <article class="input-card">
+                    <div class="input-card-header">
+                        <h3>Image input</h3>
+                        <p>Use your camera or upload a clear face photo.</p>
+                    </div>
+
+                    <label class="field">
+                        <span>Upload image</span>
+                        <input type="file" name="face_image" accept=".png,.jpg,.jpeg,.webp,image/*">
+                    </label>
+
+                    <div class="camera-shell">
+                        <video id="cameraFeed" autoplay playsinline muted></video>
+                        <canvas id="cameraCanvas" class="hidden-canvas"></canvas>
+                        <div class="camera-preview" id="cameraPreview">No frame captured yet.</div>
+                    </div>
+
+                    <div class="action-row">
+                        <button class="btn btn-secondary" type="button" id="startCameraBtn">Start camera</button>
+                        <button class="btn btn-primary" type="button" id="captureFrameBtn">Capture frame</button>
+                    </div>
+                    <p class="helper-text" id="cameraStatus">Allow camera access when prompted, or skip this and upload an image instead.</p>
+                </article>
+            </div>
+        {% endif %}
+
+        {% if analyzer_mode in ("voice", "all") %}
+            <div class="panel-grid single-column">
+                <article class="input-card">
+                    <div class="input-card-header">
+                        <h3>Voice input</h3>
+                        <p>Upload audio or record a short sample in the browser.</p>
+                    </div>
+
+                    <label class="field">
+                        <span>Upload voice file</span>
+                        <input type="file" name="voice_file" accept=".wav,.mp3,.flac,.ogg,.webm,.m4a,audio/*">
+                    </label>
+
+                    <input type="file" id="voiceRecordingInput" name="voice_recording" class="visually-hidden" accept="audio/*">
+
+                    <div class="action-row">
+                        <button class="btn btn-secondary" type="button" id="startRecordingBtn">Start recording</button>
+                        <button class="btn btn-primary" type="button" id="stopRecordingBtn" disabled>Stop recording</button>
+                    </div>
+
+                    <audio id="voicePreview" controls class="audio-preview"></audio>
+                    <p class="helper-text" id="voiceStatus">Short and clear audio works best. WAV and MP3 are the safest choices.</p>
+                </article>
+            </div>
+        {% endif %}
+
+        {% if analyzer_mode in ("text", "all") %}
+            <div class="panel-grid single-column">
+                <article class="input-card">
+                    <div class="input-card-header">
+                        <h3>Text input</h3>
+                        <p>Write a short sentence or paragraph about how you feel.</p>
+                    </div>
+                    <label class="field">
+                        <span>Your message</span>
+                        <textarea name="text_input" rows="5" placeholder="Example: I am feeling stressed before my final presentation, but I want to stay focused."></textarea>
+                    </label>
+                </article>
+            </div>
+        {% endif %}
+
+        {% if analyzer_mode == "all" %}
+            <div class="weights-panel">
+                <div class="section-heading compact">
+                    <span class="eyebrow">Advanced</span>
+                    <h3>Balance the combined analysis</h3>
+                </div>
+
+                <p class="helper-text">Only the all-inputs page needs weights. Single-mode pages run with automatic settings.</p>
+
+                <div class="weight-grid">
+                    <label class="weight-card">
+                        <span>Face</span>
+                        <strong data-weight-output="face">{{ default_weights.face }}</strong>
+                        <input type="range" name="face_weight" min="0" max="1" step="0.05" value="{{ default_weights.face }}" data-weight-input="face">
+                    </label>
+                    <label class="weight-card">
+                        <span>Voice</span>
+                        <strong data-weight-output="voice">{{ default_weights.voice }}</strong>
+                        <input type="range" name="voice_weight" min="0" max="1" step="0.05" value="{{ default_weights.voice }}" data-weight-input="voice">
+                    </label>
+                    <label class="weight-card">
+                        <span>Text</span>
+                        <strong data-weight-output="text">{{ default_weights.text }}</strong>
+                        <input type="range" name="text_weight" min="0" max="1" step="0.05" value="{{ default_weights.text }}" data-weight-input="text">
+                    </label>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="action-row action-row-end">
+            <button class="btn btn-primary" type="submit">{{ submit_label }}</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_name }} | {{ page_title_text }}{% endblock %}
+
+{% block body_class %}page-shell dashboard-shell{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <aside class="sidebar-drawer" id="sidebarDrawer">
+        <div class="sidebar-brand">
+            <span class="sidebar-mark">ES</span>
+            <div>
+                <strong>{{ app_name }}</strong>
+                <p>Emotion workspace</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            {% for item in nav_items %}
+                <a href="{{ item.href }}" class="{% if current_page == item.key %}is-active{% endif %}">{{ item.label }}</a>
+            {% endfor %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>Signed in as</p>
+            <strong>{{ g.user["name"] }}</strong>
+            <a class="btn btn-secondary btn-block" href="{{ url_for('logout') }}">Sign out</a>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="topbar">
+            <button class="drawer-toggle" type="button" data-sidebar-toggle aria-label="Toggle sidebar">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <div>
+                <div class="eyebrow">{{ page_eyebrow }}</div>
+                <h1>{{ page_title_text }}</h1>
+            </div>
+
+            <div class="topbar-badge">
+                <span>Last update</span>
+                <strong>{{ last_analysis.timestamp if last_analysis else "No analysis yet" }}</strong>
+            </div>
+        </header>
+
+        {% block workspace_content %}{% endblock %}
+    </main>
+</div>
+{% endblock %}

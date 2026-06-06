@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_name }} | Register{% endblock %}
+
+{% block body_class %}page-shell auth-shell{% endblock %}
+
+{% block content %}
+<main class="auth-layout">
+    <section class="auth-copy">
+        <div class="eyebrow">Project onboarding</div>
+        <h1>Create a professional account for your FYP dashboard.</h1>
+        <p>
+            Register once, then use the platform to analyze multimodal emotion signals
+            and review tailored support actions inside a modern web interface.
+        </p>
+        <ul class="auth-points">
+            <li>Clean authentication flow</li>
+            <li>Persistent analysis history</li>
+            <li>Emotion support cards with AI prompt suggestions</li>
+        </ul>
+    </section>
+
+    <section class="glass-panel auth-card">
+        <div class="section-heading">
+            <span class="eyebrow">Start now</span>
+            <h2>Register</h2>
+        </div>
+
+        <form method="post" class="form-grid">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="field">
+                <span>Full name</span>
+                <input type="text" name="name" placeholder="Your full name" required>
+            </label>
+            <label class="field">
+                <span>Email address</span>
+                <input type="email" name="email" placeholder="student@university.edu" required>
+            </label>
+            <label class="field">
+                <span>Password</span>
+                <input type="password" name="password" placeholder="Create a password" required>
+            </label>
+            <label class="field">
+                <span>Confirm password</span>
+                <input type="password" name="confirm_password" placeholder="Repeat the password" required>
+            </label>
+            <button class="btn btn-primary btn-block" type="submit">Create account</button>
+        </form>
+
+        <p class="auth-switch">
+            Already registered?
+            <a href="{{ url_for('login') }}">Sign in</a>
+        </p>
+    </section>
+</main>
+{% endblock %}
