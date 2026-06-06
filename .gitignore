@@ -44,3 +44,10 @@ desktop.ini
 # Logs
 *.log
 
+# FFmpeg
+ffmpeg-8.1.1-essentials_build/
+ffmpeg-8.1.1-essentials_build.zip
+
+# Audio files
+audio.mp3
+*.mp3
