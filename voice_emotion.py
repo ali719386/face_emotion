@@ -4,7 +4,7 @@ import soundfile as sf
 import librosa
 from tensorflow.keras.models import load_model
 
-MODEL_PATH = os.path.join("models", "voice_model.h5")
+MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "voice_model.h5")
 
 
 class VoiceEmotion:

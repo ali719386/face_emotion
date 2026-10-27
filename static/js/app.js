@@ -5,26 +5,26 @@ document.addEventListener("DOMContentLoaded", () => {
     setupWeightOutputs();
     setupCameraCapture();
     setupVoiceRecorder();
-    setupPromptCopy();
     setupAnalysisLoading();
+    setupFlashMessages();
+    setupRevealAndCounters();
+    setupCardSpotlight();
 });
 
 function setupThemeToggle() {
     const button = document.querySelector("[data-theme-toggle]");
-    const icon = document.querySelector("[data-theme-icon]");
     const label = document.querySelector("[data-theme-label]");
+    const root = document.documentElement;
 
     if (!button) {
         return;
     }
 
-    const applyTheme = (theme) => {
-        document.documentElement.setAttribute("data-theme", theme);
-        localStorage.setItem("emotion-theme", theme);
+    let switchTimer = null;
 
-        if (icon) {
-            icon.textContent = theme === "light" ? "L" : "D";
-        }
+    const applyTheme = (theme) => {
+        root.setAttribute("data-theme", theme);
+        localStorage.setItem("emotion-theme", theme);
 
         if (label) {
             label.textContent = theme === "light" ? "Light" : "Dark";
@@ -33,25 +33,162 @@ function setupThemeToggle() {
         button.setAttribute("aria-label", `Switch to ${theme === "light" ? "dark" : "light"} theme`);
     };
 
-    const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
-    applyTheme(currentTheme);
+    applyTheme(root.getAttribute("data-theme") || "dark");
 
     button.addEventListener("click", () => {
-        const nextTheme = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
-        applyTheme(nextTheme);
+        // Fade colours only while switching, so normal hovers stay snappy.
+        root.classList.add("theme-switching");
+        clearTimeout(switchTimer);
+        switchTimer = setTimeout(() => root.classList.remove("theme-switching"), 320);
+
+        applyTheme(root.getAttribute("data-theme") === "light" ? "dark" : "light");
     });
 }
 
 function setupSidebar() {
     const toggle = document.querySelector("[data-sidebar-toggle]");
     const drawer = document.getElementById("sidebarDrawer");
+    const backdrop = document.querySelector("[data-drawer-backdrop]");
 
     if (!toggle || !drawer) {
         return;
     }
 
-    toggle.addEventListener("click", () => {
-        drawer.classList.toggle("is-open");
+    const setOpen = (open) => {
+        drawer.classList.toggle("is-open", open);
+        if (backdrop) {
+            backdrop.classList.toggle("is-visible", open);
+        }
+        toggle.setAttribute("aria-expanded", String(open));
+    };
+
+    toggle.addEventListener("click", () => setOpen(!drawer.classList.contains("is-open")));
+
+    if (backdrop) {
+        backdrop.addEventListener("click", () => setOpen(false));
+    }
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && drawer.classList.contains("is-open")) {
+            setOpen(false);
+            toggle.focus();
+        }
+    });
+}
+
+function setupFlashMessages() {
+    const dismiss = (flash) => {
+        if (!flash || flash.classList.contains("is-leaving")) {
+            return;
+        }
+        flash.classList.add("is-leaving");
+        setTimeout(() => flash.remove(), 280);
+    };
+
+    document.querySelectorAll(".flash").forEach((flash, index) => {
+        const closeButton = flash.querySelector("[data-flash-close]");
+        if (closeButton) {
+            closeButton.addEventListener("click", () => dismiss(flash));
+        }
+
+        // Errors stay until closed. Other messages close when their timer bar
+        // (CSS ::after animation, paused on hover) runs out.
+        if (!flash.classList.contains("flash-error")) {
+            flash.style.setProperty("--flash-delay", `${index * 400}ms`);
+            flash.addEventListener("animationend", (event) => {
+                if (event.animationName === "flashTimer") {
+                    dismiss(flash);
+                }
+            });
+        }
+    });
+}
+
+const prefersReducedMotion = () =>
+    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Cards below the fold fade in when they scroll into view; numbers with
+// data-count-to count up from 0 the first time they become visible.
+function setupRevealAndCounters() {
+    const cards = document.querySelectorAll(
+        ".glass-panel, .quick-link-card, .step-card, .feature-card, .stat-card, .support-card, .history-card, .input-card"
+    );
+    const counters = document.querySelectorAll("[data-count-to]");
+
+    if (prefersReducedMotion() || !("IntersectionObserver" in window)) {
+        return;
+    }
+
+    const viewportBottom = window.innerHeight;
+    const pending = [];
+    cards.forEach((card) => {
+        // Nested cards follow their parent panel.
+        if (card.parentElement && card.parentElement.closest(".reveal-pending")) {
+            return;
+        }
+        if (card.getBoundingClientRect().top > viewportBottom) {
+            card.classList.add("reveal-pending");
+            pending.push(card);
+        }
+    });
+
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.remove("reveal-pending");
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
+    pending.forEach((card) => revealObserver.observe(card));
+
+    const countUp = (element) => {
+        const target = parseFloat(element.dataset.countTo);
+        if (Number.isNaN(target)) {
+            return;
+        }
+        const decimals = (element.dataset.countTo.split(".")[1] || "").length;
+        const duration = 1100;
+        const start = performance.now();
+        const step = (now) => {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            element.textContent = (target * eased).toFixed(decimals);
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                element.textContent = element.dataset.countTo;
+            }
+        };
+        element.textContent = (0).toFixed(decimals);
+        requestAnimationFrame(step);
+    };
+
+    const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                counterObserver.unobserve(entry.target);
+                // Wait for the card's own fade-in before counting.
+                setTimeout(() => countUp(entry.target), 180);
+            }
+        });
+    }, { threshold: 0.4 });
+    counters.forEach((counter) => counterObserver.observe(counter));
+}
+
+// A soft light follows the cursor across interactive cards.
+function setupCardSpotlight() {
+    if (prefersReducedMotion() || !window.matchMedia("(hover: hover)").matches) {
+        return;
+    }
+
+    document.querySelectorAll(".quick-link-card, .support-card, .feature-card, .history-card, .stat-card").forEach((card) => {
+        card.classList.add("spotlight-card");
+        card.addEventListener("pointermove", (event) => {
+            const rect = card.getBoundingClientRect();
+            card.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+            card.style.setProperty("--my", `${event.clientY - rect.top}px`);
+        });
     });
 }
 
@@ -241,27 +378,6 @@ function setupVoiceRecorder() {
         mediaRecorder.stop();
         startButton.disabled = false;
         stopButton.disabled = true;
-    });
-}
-
-function setupPromptCopy() {
-    const buttons = document.querySelectorAll("[data-copy-target]");
-
-    buttons.forEach((button) => {
-        button.addEventListener("click", async () => {
-            const content = button.dataset.copyTarget;
-
-            try {
-                await navigator.clipboard.writeText(content);
-                const original = button.textContent;
-                button.textContent = "Copied";
-                setTimeout(() => {
-                    button.textContent = original;
-                }, 1200);
-            } catch (error) {
-                button.textContent = "Copy failed";
-            }
-        });
     });
 }
 

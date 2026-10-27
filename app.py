@@ -1,14 +1,35 @@
 import os
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
+# Keep model downloads and temp files inside the project folder instead of the
+# user profile on C:. Must be set before transformers/deepface are imported.
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+CACHE_DIR = os.path.join(PROJECT_DIR, ".cache")
+os.environ.setdefault("HF_HOME", os.path.join(CACHE_DIR, "huggingface"))
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+os.environ.setdefault("DEEPFACE_HOME", os.path.join(CACHE_DIR, "deepface"))
+
 import base64
+import glob
 import json
+import shutil
 import sqlite3
 import tempfile
+
+tempfile.tempdir = os.path.join(CACHE_DIR, "tmp")
+os.makedirs(tempfile.tempdir, exist_ok=True)
+
+# Browser recordings (.webm) and .m4a files are decoded by librosa through ffmpeg.
+# If ffmpeg isn't on PATH, use a copy extracted inside the project folder
+# (e.g. ffmpeg-8.1.1-essentials_build/.../bin/ffmpeg.exe).
+if shutil.which("ffmpeg") is None:
+    for _ffmpeg in sorted(glob.glob(os.path.join(PROJECT_DIR, "ffmpeg*", "**", "bin", "ffmpeg*"), recursive=True)):
+        os.environ["PATH"] = os.path.dirname(_ffmpeg) + os.pathsep + os.environ.get("PATH", "")
+        break
 import secrets
+from contextlib import contextmanager
 from datetime import datetime
 from functools import wraps
-
 import cv2
 import numpy as np
 from flask import Flask, flash, g, redirect, render_template, request, session, url_for
@@ -18,7 +39,6 @@ from werkzeug.utils import secure_filename
 from fusion import FusionEngine, normalize_scores
 
 APP_NAME = "EmotionSense"
-AI_AGENT_URL = "https://nic-fsd-testing-agent.vercel.app/"
 ALLOWED_AUDIO_EXTENSIONS = {"wav", "mp3", "flac", "ogg", "webm", "m4a"}
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 DEFAULT_WEIGHTS = {"face": 0.4, "voice": 0.3, "text": 0.3}
@@ -30,6 +50,8 @@ INPUT_MODE_WEIGHTS = {
 }
 
 MODEL_CACHE = {}
+# Stored in history for an input the user didn't provide.
+NOT_USED_LABEL = "not used"
 
 INPUT_MODES = [
     {
@@ -118,12 +140,6 @@ EMOTION_SUPPORT = {
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
             },
-            {
-                "label": "AI companion",
-                "title": "Talk to an AI agent",
-                "description": "Use a structured prompt to unpack the feeling and get small next steps.",
-                "prompt": "I feel sad today. Help me calm down with three simple steps and one reflective question.",
-            },
         ],
     },
     "happy": {
@@ -143,12 +159,6 @@ EMOTION_SUPPORT = {
                 "description": "Use music to sustain motivation without losing focus.",
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
-            },
-            {
-                "label": "AI companion",
-                "title": "Plan the next win",
-                "description": "Ask the AI agent to turn this high-energy state into a focused plan.",
-                "prompt": "I am feeling happy and energized. Help me plan three productive tasks for today.",
             },
         ],
     },
@@ -170,12 +180,6 @@ EMOTION_SUPPORT = {
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
             },
-            {
-                "label": "AI companion",
-                "title": "Journal the moment",
-                "description": "Let the AI help capture what went right and how to repeat it.",
-                "prompt": "I feel joyful right now. Help me write a short reflection about what went well today.",
-            },
         ],
     },
     "angry": {
@@ -195,12 +199,6 @@ EMOTION_SUPPORT = {
                 "description": "Avoid high-energy songs and use slower breathing-friendly audio.",
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
-            },
-            {
-                "label": "AI companion",
-                "title": "De-escalation coach",
-                "description": "Use the AI agent to organize the situation before responding.",
-                "prompt": "I am angry. Help me calm down first, then help me respond without making things worse.",
             },
         ],
     },
@@ -222,17 +220,11 @@ EMOTION_SUPPORT = {
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
             },
-            {
-                "label": "AI companion",
-                "title": "Fear breakdown",
-                "description": "Ask the AI to separate real risk from imagined escalation.",
-                "prompt": "I am feeling afraid. Help me identify what I can control, what I cannot, and what to do next.",
-            },
         ],
     },
     "anxious": {
         "headline": "Bring the system down one layer at a time.",
-        "summary": "Use calm recitation, low-pressure audio, and an AI grounding prompt.",
+        "summary": "Use calm recitation and low-pressure audio.",
         "cards": [
             {
                 "label": "Spiritual support",
@@ -247,12 +239,6 @@ EMOTION_SUPPORT = {
                 "description": "Choose tracks that are repetitive, slow, and not emotionally intense.",
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
-            },
-            {
-                "label": "AI companion",
-                "title": "Grounding conversation",
-                "description": "Use the AI to slow the thought loop and identify one immediate action.",
-                "prompt": "I feel anxious. Walk me through a 2-minute grounding routine and one practical next step.",
             },
         ],
     },
@@ -274,12 +260,6 @@ EMOTION_SUPPORT = {
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
             },
-            {
-                "label": "AI companion",
-                "title": "Interpret the moment",
-                "description": "Use the AI to think through what happened and how to respond well.",
-                "prompt": "Something surprised me today. Help me interpret it and choose a smart response.",
-            },
         ],
     },
     "neutral": {
@@ -300,12 +280,6 @@ EMOTION_SUPPORT = {
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
             },
-            {
-                "label": "AI companion",
-                "title": "Build the day plan",
-                "description": "Use the AI agent to turn a steady mood into a focused routine.",
-                "prompt": "I feel neutral and stable. Help me build a clean plan for the next few hours.",
-            },
         ],
     },
     "disgust": {
@@ -325,12 +299,6 @@ EMOTION_SUPPORT = {
                 "description": "Move to audio that reduces sensory intensity rather than increasing it.",
                 "cta": "Open music",
                 "url": "https://open.spotify.com/",
-            },
-            {
-                "label": "AI companion",
-                "title": "Process the reaction",
-                "description": "Use the AI to understand the trigger and decide how to move on.",
-                "prompt": "I feel disgusted by something that happened. Help me process the reaction calmly and move forward.",
             },
         ],
     },
@@ -361,10 +329,23 @@ def create_app():
             return redirect(request.referrer or url_for("landing"))
         return None
 
+    @app.errorhandler(413)
+    def upload_too_large(_error):
+        flash("Upload is too large. Please keep files under 25 MB.", "error")
+        return redirect(request.referrer or url_for("dashboard"))
+
+    # Changes whenever the CSS/JS files change, so browsers fetch the new version
+    # instead of a cached one (no Ctrl+F5 needed after an update).
+    asset_version = str(int(max(
+        os.path.getmtime(os.path.join(app.static_folder, "css", "style.css")),
+        os.path.getmtime(os.path.join(app.static_folder, "js", "app.js")),
+    )))
+
     @app.context_processor
     def inject_globals():
         return {
             "app_name": APP_NAME,
+            "asset_version": asset_version,
             "current_year": datetime.utcnow().year,
             "csrf_token": generate_csrf_token,
         }
@@ -392,12 +373,19 @@ def create_app():
 
             if not name or not email or not password:
                 flash("Name, email, and password are required.", "error")
+            elif len(password) < 8:
+                flash("Password must be at least 8 characters.", "error")
             elif password != confirm_password:
                 flash("Passwords do not match.", "error")
             elif get_user_by_email(email):
                 flash("That email is already registered.", "error")
             else:
-                user_id = create_user(name, email, password)
+                try:
+                    user_id = create_user(name, email, password)
+                except sqlite3.IntegrityError:
+                    flash("That email is already registered.", "error")
+                    return render_template("register.html")
+                session.clear()
                 session["user_id"] = user_id
                 flash("Account created successfully.", "success")
                 return redirect(url_for("dashboard"))
@@ -522,23 +510,25 @@ def create_app():
 
         active_modalities = set()
         # Only count a modality as active if it produced a real (non-fallback) result
-        if chosen_face is not None and face_result.get("label") not in (None, "neutral") or (
-            chosen_face is not None and not face_issue
-        ):
+        if chosen_face is not None and not face_issue:
             active_modalities.add("face")
         if chosen_audio is not None and not voice_issue:
             active_modalities.add("voice")
-        if text_input:
+        if text_input and not text_issue:
             active_modalities.add("text")
-        # Fall back to treating all as active if nothing provided (validation catches this earlier)
+        # Every submitted input failed (e.g. no face in the photo): don't report a
+        # made-up neutral result, send the user back with the reason instead.
         if not active_modalities:
-            active_modalities = None
+            for issue in (face_issue, voice_issue, text_issue):
+                if issue:
+                    flash(issue, "error")
+            return redirect(get_analysis_redirect_url(input_mode))
         fused = FusionEngine(weights).fuse(face_result, voice_result, text_result, active_modalities)
         sorted_scores = sort_scores(fused["scores"])
         dominant_percent = sorted_scores[0]["probability"] if sorted_scores else 0.0
         support = build_support_plan(fused["label"])
         issues = [issue for issue in (text_issue, voice_issue, face_issue) if issue]
-        modality_details = build_modality_details(face_result, voice_result, text_result)
+        modality_details = build_modality_details(face_result, voice_result, text_result, active_modalities)
         fused_confidence = build_confidence_summary(fused["scores"])
 
         analysis = {
@@ -549,9 +539,9 @@ def create_app():
                 "confidence": fused_confidence,
             },
             "modalities": {
-                "face": face_result["label"],
-                "voice": voice_result["label"],
-                "text": text_result["label"],
+                "face": face_result["label"] if "face" in active_modalities else NOT_USED_LABEL,
+                "voice": voice_result["label"] if "voice" in active_modalities else NOT_USED_LABEL,
+                "text": text_result["label"] if "text" in active_modalities else NOT_USED_LABEL,
             },
             "modality_details": modality_details,
             "weights": weights,
@@ -568,10 +558,16 @@ def create_app():
         flash("Emotion analysis completed.", "success")
         return redirect(url_for("dashboard_results"))
 
+    @contextmanager
     def get_db_connection():
+        # sqlite3's own context manager only commits/rolls back; it never closes.
         connection = sqlite3.connect(app.config["DATABASE"])
         connection.row_factory = sqlite3.Row
-        return connection
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
 
     def init_db():
         with get_db_connection() as connection:
@@ -703,9 +699,9 @@ def create_app():
             "selected_input_mode": session.get("selected_input_mode", "all"),
             "nav_items": [
                 {"key": "overview", "label": "Overview", "href": url_for("dashboard")},
-                {"key": "image", "label": "Image Page", "href": url_for("dashboard_mode", mode="image")},
-                {"key": "voice", "label": "Voice Page", "href": url_for("dashboard_mode", mode="voice")},
-                {"key": "text", "label": "Text Page", "href": url_for("dashboard_mode", mode="text")},
+                {"key": "image", "label": "Image", "href": url_for("dashboard_mode", mode="image")},
+                {"key": "voice", "label": "Voice", "href": url_for("dashboard_mode", mode="voice")},
+                {"key": "text", "label": "Text", "href": url_for("dashboard_mode", mode="text")},
                 {"key": "all", "label": "All Inputs", "href": url_for("dashboard_mode", mode="all")},
                 {"key": "results", "label": "Results", "href": url_for("dashboard_results")},
             ],
@@ -715,10 +711,15 @@ def create_app():
 
     with app.app_context():
         init_db()
-        # Preload models at startup so first request is fast
+
+    # Preload models at startup so first request is fast. A failure here must not
+    # stop the app; predict_text() reports a fallback notice per request instead.
     print("[INFO] Preloading text model...")
-    get_text_model()
-    print("[INFO] Models ready.")
+    try:
+        get_text_model()
+        print("[INFO] Models ready.")
+    except Exception as exc:
+        print(f"[WARN] Text model could not be preloaded: {exc}")
 
     return app
 
@@ -831,6 +832,8 @@ def predict_face(face_source):
 
     try:
         result = get_face_model().predict_from_frame(frame)
+        if result.get("no_face"):
+            return neutral, "No face found in the image. Use a photo where the face is clearly visible and facing the camera."
         if result.get("label") is None:
             # Low-confidence detection — face not clear enough; treat as no face signal
             return neutral, "Face not clearly detected. Try better lighting or a closer shot."
@@ -945,15 +948,21 @@ def build_confidence_summary(scores):
     }
 
 
-def build_modality_details(face_result, voice_result, text_result):
+def build_modality_details(face_result, voice_result, text_result, active_modalities):
     details = {}
     for key, result in {
         "face": face_result,
         "voice": voice_result,
         "text": text_result,
     }.items():
+        if key not in active_modalities:
+            # Input not given (or it failed): don't show the neutral placeholder
+            # as if it were a confident prediction.
+            details[key] = {"used": False, "label": "Not used", "confidence_level": "", "confidence_percent": 0.0}
+            continue
         confidence = build_confidence_summary(result.get("scores", {}))
         details[key] = {
+            "used": True,
             "label": result.get("label", "neutral").replace("_", " ").title(),
             "confidence_level": confidence["level"],
             "confidence_percent": confidence["score_percent"],
@@ -964,13 +973,7 @@ def build_modality_details(face_result, voice_result, text_result):
 def build_support_plan(emotion_label):
     emotion_key = (emotion_label or "neutral").lower()
     plan = EMOTION_SUPPORT.get(emotion_key, EMOTION_SUPPORT["neutral"])
-    cards = []
-    for card in plan["cards"]:
-        item = dict(card)
-        if item.get("prompt"):
-            item["agent_url"] = AI_AGENT_URL
-            item["agent_cta"] = "Open AI Agent"
-        cards.append(item)
+    cards = [dict(card) for card in plan["cards"]]
     return {
         "emotion": emotion_key.title(),
         "headline": plan["headline"],
@@ -1048,10 +1051,10 @@ def format_timestamp(timestamp_text):
 
 
 app = create_app()
-app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("FLASK_RUN_PORT", "8003"))
-    debug_enabled = os.environ.get("FLASK_DEBUG", "1") == "1"
+    # Debug mode exposes the interactive Werkzeug debugger; keep it opt-in.
+    debug_enabled = os.environ.get("FLASK_DEBUG", "0") == "1"
     app.run(debug=debug_enabled, use_reloader=False, port=port)

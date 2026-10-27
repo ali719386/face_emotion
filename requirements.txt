@@ -1,0 +1,32 @@
+# EmotionSense dependencies
+# Python 3.10 is required (TensorFlow 2.10 does not support newer Pythons).
+# Install with:  pip install -r requirements.txt
+# Tested together on 2026-10-27 with the versions noted on each line.
+
+# Web app
+flask>=3.1,<4                 # tested 3.1.3
+werkzeug>=3.1,<4              # tested 3.1.3
+
+# Face emotion (DeepFace + OpenCV)
+tensorflow==2.10.0            # also loads the voice model (models/voice_model.h5)
+numpy>=1.23,<2                # TensorFlow 2.10 does not work with NumPy 2
+opencv-python>=4.10,<4.12     # 4.12+ requires NumPy 2, which TensorFlow 2.10 can't use
+deepface==0.0.99              # DeepFace's API changes between releases
+
+# Text emotion (Hugging Face model j-hartmann/emotion-english-distilroberta-base)
+transformers>=5.0,<5.9        # tested 5.8.1
+torch>=2.2,<2.10              # tested 2.9.1 (CPU is enough)
+
+# Voice emotion (MFCC features + CNN)
+librosa>=0.10,<0.12           # tested 0.11.0
+soundfile>=0.12               # tested 0.13.1; reads WAV, MP3, OGG and FLAC
+
+# Voice model training only (train_voice_model.py)
+scikit-learn>=1.1             # tested 1.7.2
+requests>=2.27                # tested 2.31.0; downloads the RAVDESS dataset
+
+# Not pip packages:
+# - ffmpeg is needed for browser recordings (.webm) and .m4a files. Put it on PATH,
+#   or extract it inside the project folder (ffmpeg*/.../bin/ffmpeg) and app.py finds it.
+# - The frontend (styles, animations, fonts) uses no extra packages: plain CSS/JS
+#   and font files in static/fonts/.

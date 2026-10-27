@@ -1,0 +1,13 @@
+<header class="site-header">
+    <a class="brand-lockup" href="{{ url_for('landing') }}">
+        <span class="sidebar-mark" aria-hidden="true">ES</span>
+        <span>
+            <strong>{{ app_name }}</strong>
+            <small>Multimodal emotion analysis</small>
+        </span>
+    </a>
+    <nav class="site-header-links" aria-label="Account">
+        <a href="{{ url_for('login') }}">Sign in</a>
+        <a href="{{ url_for('register') }}">Create account</a>
+    </nav>
+</header>

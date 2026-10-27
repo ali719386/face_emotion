@@ -11,8 +11,8 @@
         <div class="result-grid">
             <article class="glass-panel result-hero">
                 <p class="result-label">Dominant emotion</p>
-                <h3>{{ last_analysis.fused.label|title }}</h3>
-                <strong>{{ last_analysis.fused.dominant_percent }}%</strong>
+                <h3 class="result-emotion">{{ last_analysis.fused.label|title }}</h3>
+                <strong><span data-count-to="{{ last_analysis.fused.dominant_percent }}">{{ last_analysis.fused.dominant_percent }}</span>%</strong>
                 <p>Analysis mode: {{ last_analysis.input_mode_label }}</p>
             </article>
 
@@ -29,42 +29,42 @@
 
         <article class="glass-panel score-panel">
             <h3>Emotion distribution</h3>
+            {% set shown_scores = last_analysis.fused.scores|selectattr("probability", "ge", 0.1)|list %}
+            {% set hidden_count = last_analysis.fused.scores|length - shown_scores|length %}
             <div class="score-list">
-                {% for item in last_analysis.fused.scores %}
+                {% for item in shown_scores %}
                     <div class="score-row">
                         <div class="score-copy">
                             <span>{{ item.emotion }}</span>
-                            <strong>{{ item.probability }}%</strong>
+                            <strong><span data-count-to="{{ item.probability }}">{{ item.probability }}</span>%</strong>
                         </div>
                         <div class="score-bar">
                             <div class="score-bar-fill" style="width: {{ item.probability }}%;"></div>
                         </div>
                     </div>
                 {% endfor %}
+                {% if hidden_count %}
+                    <p class="score-more">{{ hidden_count }} more emotion{{ 's' if hidden_count != 1 }} below 0.1%</p>
+                {% endif %}
             </div>
         </article>
 
         <article class="glass-panel score-panel">
             <h3>Per-modality quality</h3>
-            <div class="score-list">
-                <div class="score-row">
-                    <div class="score-copy">
-                        <span>Face</span>
-                        <strong>{{ last_analysis.modality_details.face.label }} · {{ last_analysis.modality_details.face.confidence_level }} ({{ last_analysis.modality_details.face.confidence_percent }}%)</strong>
+            <div class="score-list modality-rows">
+                {% for key, name in [("face", "Face"), ("voice", "Voice"), ("text", "Text")] %}
+                    {% set detail = last_analysis.modality_details[key] %}
+                    <div class="score-row">
+                        <div class="score-copy">
+                            <span>{{ name }}</span>
+                            {% if detail.used is sameas false %}
+                                <strong class="muted-value">Not used</strong>
+                            {% else %}
+                                <strong>{{ detail.label }} · {{ detail.confidence_level }} ({{ detail.confidence_percent }}%)</strong>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-                <div class="score-row">
-                    <div class="score-copy">
-                        <span>Voice</span>
-                        <strong>{{ last_analysis.modality_details.voice.label }} · {{ last_analysis.modality_details.voice.confidence_level }} ({{ last_analysis.modality_details.voice.confidence_percent }}%)</strong>
-                    </div>
-                </div>
-                <div class="score-row">
-                    <div class="score-copy">
-                        <span>Text</span>
-                        <strong>{{ last_analysis.modality_details.text.label }} · {{ last_analysis.modality_details.text.confidence_level }} ({{ last_analysis.modality_details.text.confidence_percent }}%)</strong>
-                    </div>
-                </div>
+                {% endfor %}
             </div>
         </article>
 
@@ -108,14 +108,6 @@
                     {% if card.url %}
                         <a class="btn btn-secondary btn-block" href="{{ card.url }}" target="_blank" rel="noreferrer">{{ card.cta }}</a>
                     {% endif %}
-
-                    {% if card.prompt %}
-                        <div class="prompt-box">{{ card.prompt }}</div>
-                        {% if card.agent_url %}
-                            <a class="btn btn-secondary btn-block" href="{{ card.agent_url }}" target="_blank" rel="noreferrer">{{ card.agent_cta }}</a>
-                        {% endif %}
-                        <button class="btn btn-primary btn-block" type="button" data-copy-target="{{ card.prompt }}">Copy AI prompt</button>
-                    {% endif %}
                 </article>
             {% endfor %}
         </div>
@@ -139,13 +131,13 @@
                 <article class="glass-panel history-card">
                     <div class="history-head">
                         <h3>{{ item.dominant_emotion|title }}</h3>
-                        <strong>{{ item.dominant_percent }}%</strong>
+                        <strong><span data-count-to="{{ item.dominant_percent }}">{{ item.dominant_percent }}</span>%</strong>
                     </div>
                     <p>{{ item.created_at }}</p>
                     <div class="history-meta">
-                        <span>Face: {{ item.face_label|title }}</span>
-                        <span>Voice: {{ item.voice_label|title }}</span>
-                        <span>Text: {{ item.text_label|title }}</span>
+                        {% for name, label in [("Face", item.face_label), ("Voice", item.voice_label), ("Text", item.text_label)] if label != "not used" %}
+                            <span>{{ name }}: {{ label|title }}</span>
+                        {% endfor %}
                     </div>
                 </article>
             {% endfor %}

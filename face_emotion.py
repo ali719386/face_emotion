@@ -15,14 +15,20 @@ class FaceEmotion:
     def predict_from_frame(self, frame):
         """
         frame: BGR image (numpy array) from OpenCV.
-        Returns: {"label": str, "scores": {emotion: float}} 
-                 or {"label": None, "scores": {}} if confidence is too low
-                 (no face detected / poor quality image).
+        Returns: {"label": str, "scores": {emotion: float}}
+                 or {"label": None, "scores": {}, "no_face": True} if no face was found
+                 or {"label": None, "scores": {...}} if confidence is too low.
         """
         res = DeepFace.analyze(frame, actions=["emotion"], enforce_detection=False)
         if isinstance(res, list):
             res = res[0]
- 
+
+        # With enforce_detection=False DeepFace falls back to analyzing the whole
+        # image when no face is found (face_confidence 0). That output is not a
+        # facial expression and usually reads as a confident "neutral".
+        if not res.get("face_confidence"):
+            return {"label": None, "scores": {}, "no_face": True}
+
         dominant = res.get("dominant_emotion", "neutral")
         emotions = res.get("emotion", {})
         scores = {k: float(v) for k, v in emotions.items()}

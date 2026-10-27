@@ -15,8 +15,9 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from sklearn.model_selection import train_test_split
 
 # ── Config ───────────────────────────────────────────────────────────────────
-DATASET_DIR = "ravdess_data"
-MODEL_DIR   = "models"
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+DATASET_DIR = os.path.join(BASE_DIR, "ravdess_data")
+MODEL_DIR   = os.path.join(BASE_DIR, "models")
 MODEL_PATH  = os.path.join(MODEL_DIR, "voice_model.h5")
 N_MFCC      = 40
 MAX_PAD_LEN = 174

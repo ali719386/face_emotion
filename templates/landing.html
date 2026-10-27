@@ -5,10 +5,11 @@
 {% block body_class %}page-shell landing-shell{% endblock %}
 
 {% block content %}
+{% include "_site_header.html" %}
 <main class="landing-layout">
     <section class="hero-panel">
         <div class="eyebrow">Multimodal Emotion Intelligence</div>
-        <h1>Professional emotion analytics for text, voice, and live camera input.</h1>
+        <h1>Professional Emotion Analytics Dashboard</h1>
         <p class="hero-copy">
             {{ app_name }} turns your FYP into a modern web platform with authentication,
             a guided dashboard, fused emotion prediction, and emotion-specific support actions.
@@ -21,11 +22,11 @@
 
         <div class="stat-row">
             <article class="stat-card">
-                <span class="stat-number">3</span>
+                <span class="stat-number" data-count-to="3">3</span>
                 <span class="stat-label">Input channels</span>
             </article>
             <article class="stat-card">
-                <span class="stat-number">1</span>
+                <span class="stat-number" data-count-to="1">1</span>
                 <span class="stat-label">Fusion dashboard</span>
             </article>
             <article class="stat-card">

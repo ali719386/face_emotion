@@ -15,22 +15,40 @@
             </div>
         </div>
 
-        <nav class="sidebar-nav">
+        {% set nav_icons = {
+            "overview": '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+            "image": '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
+            "voice": '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0M12 17v5"/>',
+            "text": '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
+            "all": '<path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5M3 17l9 5 9-5"/>',
+            "results": '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+        } %}
+        <nav class="sidebar-nav" aria-label="Workspace">
+            <div class="sidebar-nav-label">Workspace</div>
             {% for item in nav_items %}
-                <a href="{{ item.href }}" class="{% if current_page == item.key %}is-active{% endif %}">{{ item.label }}</a>
+                <a href="{{ item.href }}" class="{% if current_page == item.key %}is-active{% endif %}"{% if current_page == item.key %} aria-current="page"{% endif %}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ nav_icons[item.key]|safe }}</svg>
+                    {{ item.label }}
+                </a>
             {% endfor %}
         </nav>
 
         <div class="sidebar-footer">
-            <p>Signed in as</p>
-            <strong>{{ g.user["name"] }}</strong>
+            <div class="sidebar-user">
+                <span class="sidebar-avatar" aria-hidden="true">{{ g.user["name"][:1]|upper }}</span>
+                <div>
+                    <p>Signed in as</p>
+                    <strong>{{ g.user["name"] }}</strong>
+                </div>
+            </div>
             <a class="btn btn-secondary btn-block" href="{{ url_for('logout') }}">Sign out</a>
         </div>
     </aside>
+    <div class="drawer-backdrop" data-drawer-backdrop></div>
 
     <main class="dashboard-main">
         <header class="topbar">
-            <button class="drawer-toggle" type="button" data-sidebar-toggle aria-label="Toggle sidebar">
+            <button class="drawer-toggle" type="button" data-sidebar-toggle aria-label="Toggle sidebar" aria-controls="sidebarDrawer" aria-expanded="false">
                 <span></span>
                 <span></span>
                 <span></span>
